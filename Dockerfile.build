@@ -20,21 +20,15 @@ RUN go mod download
 
 COPY . .
 
-# Build minio binary. We build LDFLAGS here (no git: .git is in .dockerignore).
-# RELEASE may be full tag (RELEASE.2025-12-03T12-00-00Z) or timestamp (2025-12-03T12-00-05Z).
+# Build minio binary. LDFLAGS inline (no git: .git is in .dockerignore).
 RUN --mount=type=cache,target=/go/pkg/mod \
+    set -e && \
     VERSION="${RELEASE:-$(date -u +%Y-%m-%dT%H-%M-%SZ)}" && \
     VERSION="${VERSION#RELEASE.}" && \
     YEAR=$(date +%Y) && \
-    LDFLAGS="-s -w \
-      -X github.com/minio/minio/cmd.Version=${VERSION} \
-      -X github.com/minio/minio/cmd.CopyrightYear=${YEAR} \
-      -X github.com/minio/minio/cmd.ReleaseTag=RELEASE.${VERSION} \
-      -X github.com/minio/minio/cmd.CommitID=source-build \
-      -X github.com/minio/minio/cmd.ShortCommitID=source-build \
-      -X github.com/minio/minio/cmd.GOPATH=/go \
-      -X github.com/minio/minio/cmd.GOROOT=/usr/local/go" && \
-    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -tags kqueue -ldflags "${LDFLAGS}" -o /build/minio ./cmd
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -tags kqueue \
+    -ldflags "-s -w -X github.com/minio/minio/cmd.Version=${VERSION} -X github.com/minio/minio/cmd.CopyrightYear=${YEAR} -X github.com/minio/minio/cmd.ReleaseTag=RELEASE.${VERSION} -X github.com/minio/minio/cmd.CommitID=source-build -X github.com/minio/minio/cmd.ShortCommitID=source-build -X github.com/minio/minio/cmd.GOPATH=/go -X github.com/minio/minio/cmd.GOROOT=/usr/local/go" \
+    -o /build/minio ./cmd
 
 # Minimal runtime image (no dl.min.io, no minisign verification of external binaries)
 FROM registry.access.redhat.com/ubi9/ubi-micro:latest

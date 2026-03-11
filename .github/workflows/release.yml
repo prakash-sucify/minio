@@ -109,14 +109,13 @@ jobs:
           context: .
           file: ./Dockerfile.build
           push: true
+          no-cache: true
           tags: |
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/minio:${{ needs.build-binaries.outputs.version }}
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/minio:latest
           build-args: |
             RELEASE=${{ needs.build-binaries.outputs.version }}
           platforms: linux/amd64,linux/arm64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   release:
     name: Create GitHub Release
