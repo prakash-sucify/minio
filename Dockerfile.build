@@ -1,0 +1,63 @@
+# Build MinIO from source (no dependency on dl.min.io).
+# Use this for supply-chain continuity when upstream binary distribution is unavailable.
+# Multi-stage: build binary, then minimal runtime image.
+
+FROM golang:1.24-alpine AS build
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG RELEASE
+
+ENV CGO_ENABLED=0
+ENV GO111MODULE=on
+ENV GOPATH=/go
+
+WORKDIR /build
+
+# Install git for gen-ldflags (commit ID, version)
+RUN apk add --no-cache git
+
+# Copy go mod files first for better layer caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Build minio binary: use gen-ldflags for version/commit.
+# RELEASE may be full tag (RELEASE.2025-12-03T12-00-00Z) or timestamp (2025-12-03T12-00-05Z).
+RUN --mount=type=cache,target=/go/pkg/mod \
+    export MINIO_RELEASE=RELEASE && \
+    VERSION="${RELEASE:-$(date -u +%Y-%m-%dT%H-%M-%SZ)}" && \
+    VERSION="${VERSION#RELEASE.}" && \
+    LDFLAGS=$(go run buildscripts/gen-ldflags.go "${VERSION}") && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -tags kqueue -ldflags "${LDFLAGS}" -o /build/minio ./cmd
+
+# Minimal runtime image (no dl.min.io, no minisign verification of external binaries)
+FROM registry.access.redhat.com/ubi9/ubi-micro:latest
+
+ARG RELEASE
+
+LABEL org.opencontainers.image.title="MinIO (community fork build)" \
+      org.opencontainers.image.description="MinIO object storage - S3-compatible, built from source. Independent community fork." \
+      org.opencontainers.image.source="https://github.com/prakash-sucify/minio"
+
+ENV MINIO_ACCESS_KEY_FILE=access_key \
+    MINIO_SECRET_KEY_FILE=secret_key \
+    MINIO_ROOT_USER_FILE=access_key \
+    MINIO_ROOT_PASSWORD_FILE=secret_key \
+    MINIO_KMS_SECRET_KEY_FILE=kms_master_key \
+    MINIO_CONFIG_ENV_FILE=config.env \
+    MC_CONFIG_DIR=/tmp/.mc
+
+RUN chmod -R 755 /usr/bin
+
+COPY --from=build /build/minio /usr/bin/minio
+COPY dockerscripts/docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+COPY CREDITS /licenses/CREDITS
+COPY LICENSE /licenses/LICENSE
+
+EXPOSE 9000
+VOLUME ["/data"]
+
+ENTRYPOINT ["/usr/bin/docker-entrypoint.sh"]
+CMD ["minio"]
