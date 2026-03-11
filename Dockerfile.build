@@ -14,22 +14,26 @@ ENV GOPATH=/go
 
 WORKDIR /build
 
-# Install git for gen-ldflags (commit ID, version)
-RUN apk add --no-cache git
-
 # Copy go mod files first for better layer caching
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-# Build minio binary: use gen-ldflags for version/commit.
+# Build minio binary. We build LDFLAGS here (no git: .git is in .dockerignore).
 # RELEASE may be full tag (RELEASE.2025-12-03T12-00-00Z) or timestamp (2025-12-03T12-00-05Z).
 RUN --mount=type=cache,target=/go/pkg/mod \
-    export MINIO_RELEASE=RELEASE && \
     VERSION="${RELEASE:-$(date -u +%Y-%m-%dT%H-%M-%SZ)}" && \
     VERSION="${VERSION#RELEASE.}" && \
-    LDFLAGS=$(go run buildscripts/gen-ldflags.go "${VERSION}") && \
+    YEAR=$(date +%Y) && \
+    LDFLAGS="-s -w \
+      -X github.com/minio/minio/cmd.Version=${VERSION} \
+      -X github.com/minio/minio/cmd.CopyrightYear=${YEAR} \
+      -X github.com/minio/minio/cmd.ReleaseTag=RELEASE.${VERSION} \
+      -X github.com/minio/minio/cmd.CommitID=source-build \
+      -X github.com/minio/minio/cmd.ShortCommitID=source-build \
+      -X github.com/minio/minio/cmd.GOPATH=/go \
+      -X github.com/minio/minio/cmd.GOROOT=/usr/local/go" && \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -tags kqueue -ldflags "${LDFLAGS}" -o /build/minio ./cmd
 
 # Minimal runtime image (no dl.min.io, no minisign verification of external binaries)
