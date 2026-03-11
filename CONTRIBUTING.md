@@ -1,6 +1,6 @@
 # MinIO Contribution Guide (Community Fork)
 
-This fork is maintained for **supply-chain continuity** only. We accept **bug fixes and security patches**; we do **not** accept new features or large refactors. See [ROADMAP](docs/ROADMAP-RESURRECTION.md) for scope.
+This fork is maintained by **prakash-sucify** for **supply-chain continuity** only. We accept **bug fixes and security patches**; we do **not** accept new features or large refactors. See [ROADMAP](docs/ROADMAP-RESURRECTION.md) for scope.
 
 ``MinIO`` community welcomes your contribution. To make the process as seamless as possible, we recommend you read this contribution guide.
 
