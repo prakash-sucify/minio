@@ -1,15 +1,13 @@
-> [!NOTE]
-> **THIS REPOSITORY IS NO LONGER MAINTAINED.**
+> **Community fork — supply chain continuity**  
+> This is an independent, community-maintained fork of MinIO for supply-chain continuity. We build from source, publish binaries and Docker images, and accept bug/security fixes only. See [ROADMAP](docs/ROADMAP-RESURRECTION.md), [CONSOLE](docs/CONSOLE.md), and [NEXT STEPS](docs/NEXT-STEPS.md) to trigger your first release.
 >
-> **Alternatives:**
-> - **[AIStor Free](https://min.io/download)** — Full-featured, standalone edition for community use (free license)
-> - **[AIStor Enterprise](https://min.io/pricing)** — Distributed edition with commercial support
+> **Trademark:** MinIO® is a registered trademark of MinIO, Inc. This project is not affiliated with, endorsed by, or connected to MinIO, Inc.
 
 ---
 
-# MinIO Quickstart Guide
+# MinIO Quickstart Guide (Community Fork)
 
-[![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io) [![Docker Pulls](https://img.shields.io/docker/pulls/minio/minio.svg?maxAge=604800)](https://hub.docker.com/r/minio/minio/) [![license](https://img.shields.io/badge/license-AGPL%20V3-blue)](https://github.com/minio/minio/blob/master/LICENSE)
+[![license](https://img.shields.io/badge/license-AGPL%20V3-blue)](LICENSE)
 
 [![MinIO](https://raw.githubusercontent.com/minio/minio/master/.github/logo.svg?sanitize=true)](https://min.io)
 
@@ -34,27 +32,15 @@ All support is provided on a best-effort basis through Github and our [Slack](ht
 
 MinIO [AIStor](https://www.min.io/product/aistor) includes enterprise-grade support and licensing for workloads which require commercial or proprietary usage and production-level SLA/SLO-backed support. For more information, [reach out for a quote](https://min.io/pricing).
 
-## Source-Only Distribution
+## This Fork: Binaries and Docker
 
-**Important:** The MinIO community edition is now distributed as source code only. We will no longer provide pre-compiled binary releases for the community version.
+This fork provides **build-from-source** distribution so you do not depend on upstream binary or image distribution:
 
-### Installing Latest MinIO Community Edition
+- **Docker:** `docker pull ghcr.io/prakash-sucify/minio:latest` (or a specific tag from [GitHub Packages](https://github.com/prakash-sucify/minio/pkgs/container/minio)).
+- **Binaries:** Built from source and attached to [GitHub Releases](https://github.com/prakash-sucify/minio/releases) (Linux amd64/arm64). Checksums are included.
+- **From source:** `go install github.com/prakash-sucify/minio@latest` or clone and `make build`.
 
-To use MinIO community edition, you have two options:
-
-1. **Install from source** using `go install github.com/minio/minio@latest` (recommended)
-2. **Build a Docker image** from the provided Dockerfile
-
-See the sections below for detailed instructions on each method.
-
-### Legacy Binary Releases
-
-Historical pre-compiled binary releases remain available for reference but are no longer maintained:
-
-- GitHub Releases: https://github.com/minio/minio/releases
-- Direct downloads: https://dl.min.io/server/minio/release/
-
-**These legacy binaries will not receive updates.** We strongly recommend using source builds for access to the latest features, bug fixes, and security updates.
+Images are built with [Dockerfile.build](Dockerfile.build) (no dependency on dl.min.io). Release workflow: tag `v*` or `RELEASE.*`, or run the “Release (build from source)” workflow manually with a tag.
 
 ## Install from Source
 
@@ -62,7 +48,7 @@ Use the following commands to compile and run a standalone MinIO server from sou
 If you do not have a working Golang environment, please follow [How to install Golang](https://golang.org/doc/install). Minimum version required is [go1.24](https://golang.org/dl/#stable)
 
 ```sh
-go install github.com/minio/minio@latest
+go install github.com/prakash-sucify/minio@latest
 ```
 
 You can alternatively run `go build` and use the `GOOS` and `GOARCH` environment variables to control the OS and architecture target.
@@ -95,10 +81,19 @@ For application developers, see <https://docs.min.io/enterprise/aistor-object-st
 
 ## Build Docker Image
 
-You can use the `docker build .` command to build a Docker image on your local host machine.
-You must first [build MinIO](#install-from-source) and ensure the `minio` binary exists in the project root.
+To build a Docker image **from source** (recommended; no dependency on upstream binaries):
 
-The following command builds the Docker image using the default `Dockerfile` in the root project directory with the repository and image tag `myminio:minio`
+```sh
+docker build -f Dockerfile.build -t myminio:minio .
+```
+
+Alternatively, use the pre-built image from this fork:
+
+```sh
+docker pull ghcr.io/prakash-sucify/minio:latest
+```
+
+To build using the legacy `Dockerfile` (expects a pre-built `minio` binary in the project root), first [build MinIO](#install-from-source), then:
 
 ```sh
 docker build -t myminio:minio .
