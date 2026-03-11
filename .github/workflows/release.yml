@@ -50,25 +50,21 @@ jobs:
       - name: Build Linux amd64
         env:
           CGO_ENABLED: 0
-          GOOS: linux
-          GOARCH: amd64
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           VERSION="${VERSION#RELEASE.}"
-          # gen-ldflags expects timestamp (2006-01-02T15-04-05Z); for v* tags use git commit time
+          # gen-ldflags must run natively (no GOOS/GOARCH) so the runner can execute it
           if echo "${VERSION}" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'; then
             LDFLAGS=$(go run buildscripts/gen-ldflags.go "${VERSION}")
           else
             LDFLAGS=$(go run buildscripts/gen-ldflags.go)
           fi
-          go build -trimpath -tags kqueue -ldflags "${LDFLAGS}" -o minio-linux-amd64 ./cmd
+          GOOS=linux GOARCH=amd64 go build -trimpath -tags kqueue -ldflags "${LDFLAGS}" -o minio-linux-amd64 ./cmd
           sha256sum minio-linux-amd64 > minio-linux-amd64.sha256sum
 
       - name: Build Linux arm64
         env:
           CGO_ENABLED: 0
-          GOOS: linux
-          GOARCH: arm64
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           VERSION="${VERSION#RELEASE.}"
@@ -77,7 +73,7 @@ jobs:
           else
             LDFLAGS=$(go run buildscripts/gen-ldflags.go)
           fi
-          go build -trimpath -tags kqueue -ldflags "${LDFLAGS}" -o minio-linux-arm64 ./cmd
+          GOOS=linux GOARCH=arm64 go build -trimpath -tags kqueue -ldflags "${LDFLAGS}" -o minio-linux-arm64 ./cmd
           sha256sum minio-linux-arm64 > minio-linux-arm64.sha256sum
 
       - name: Upload artifacts
